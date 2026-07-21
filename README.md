@@ -1,6 +1,7 @@
-# 🗑️ Smart Waste Collection & Route Optimization System
+# 🗑️ Smart Waste Collection & Route Optimization System<img width="1897" height="866" alt="Screenshot 2026-07-22 040317" src="https://github.com/user-attachments/assets/44c32438-619c-4c95-aef4-2af907966abf" />
 
-An end-to-end, AI-powered waste management pipeline designed to monitor IoT-enabled bins, predict fill levels, score collection priorities using continuous logic, and optimize collection truck routes using Google OR-Tools.
+
+An end-to-end, AI-powered waste management pipeline designed to monitor IoT-enabled bins, predict fill levels, score collection priorities using continuous logic, and optimise collection truck routes using Google OR-Tools.
 
 ---
 
