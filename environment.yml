@@ -1,0 +1,16 @@
+name: waste_project
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - streamlit
+    - streamlit-folium
+    - folium
+    - pandas
+    - numpy
+    - scikit-learn
+    - ortools
+    - joblib
