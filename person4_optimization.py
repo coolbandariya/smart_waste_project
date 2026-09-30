@@ -28,6 +28,28 @@ def solve_vrp(bins_data, num_vehicles=2, vehicle_capacity=1000):
     :param vehicle_capacity: Capacity limit per truck
     :return: Dict containing routes and total distance
     """
+    if not isinstance(bins_data, list):
+        raise TypeError("bins_data must be a list")
+    if not isinstance(num_vehicles, int) or isinstance(num_vehicles, bool) or num_vehicles < 1:
+        raise ValueError("num_vehicles must be a positive integer")
+    if not isinstance(vehicle_capacity, (int, float)) or isinstance(vehicle_capacity, bool) or not np.isfinite(vehicle_capacity) or vehicle_capacity <= 0:
+        raise ValueError("vehicle_capacity must be a positive finite number")
+    if not bins_data:
+        return {}
+
+    for index, bin_record in enumerate(bins_data):
+        if not isinstance(bin_record, dict):
+            raise TypeError(f"bin record {index} must be a dictionary")
+        for key, low, high in (("latitude", -90, 90), ("longitude", -180, 180)):
+            value = bin_record.get(key)
+            if not isinstance(value, (int, float)) or isinstance(value, bool) or not np.isfinite(value) or not low <= value <= high:
+                raise ValueError(f"bin record {index} has invalid {key}")
+        demand = bin_record.get("waste_volume", 50)
+        if not isinstance(demand, (int, float)) or isinstance(demand, bool) or not np.isfinite(demand) or demand < 0:
+            raise ValueError(f"bin record {index} has invalid waste_volume")
+        if demand > vehicle_capacity:
+            raise ValueError(f"bin record {index} exceeds vehicle capacity")
+
     # Depot is assumed at index 0 (city center/waste hub)
     depot_location = [28.5355, 77.3910]
     locations = [depot_location] + [
@@ -97,6 +119,8 @@ def solve_vrp(bins_data, num_vehicles=2, vehicle_capacity=1000):
                 "route_bin_indices": route,
                 "total_load": route_load,
             }
+    if solution is None:
+        raise RuntimeError("No feasible collection routes found for the supplied bins and capacity")
     return routes
 
 
