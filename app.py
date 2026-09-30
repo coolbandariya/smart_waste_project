@@ -71,9 +71,13 @@ num_trucks = st.sidebar.number_input(
 truck_capacity = st.sidebar.slider("Truck Capacity (Liters)", 500, 3000, 1000)
 
 # Filter bins requiring collection
-pickup_bins = latest_df[
-    latest_df["priority_score"] >= min_priority
-].to_dict("records")
+pickup_df = latest_df[latest_df["priority_score"] >= min_priority].copy()
+# Estimate route demand from fill percentage and bin capacity.
+# This is a demo estimate, not a calibrated sensor measurement.
+pickup_df["waste_volume"] = (
+    pickup_df["capacity_liters"] * pickup_df["fill_level_pct"] / 100
+).round().astype(int)
+pickup_bins = pickup_df.to_dict("records")
 
 # Top Metrics
 col1, col2, col3, col4 = st.columns(4)
