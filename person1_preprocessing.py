@@ -3,36 +3,29 @@ import pandas as pd
 
 
 def generate_synthetic_bin_data(num_bins=20, days=30, seed=42):
-    """Generates synthetic IoT waste bin data for demonstration."""
+    """Generate synthetic IoT waste-bin observations for demonstration."""
     np.random.seed(seed)
     date_range = pd.date_range(end=pd.Timestamp.now(), periods=days * 24, freq="h")
 
     data = []
-    # Base coordinates (around a central city area)
     base_lat, base_lon = 28.5355, 77.3910
 
     for bin_id in range(1, num_bins + 1):
-        # Assign random location and capacity
         lat = base_lat + np.random.uniform(-0.05, 0.05)
         lon = base_lon + np.random.uniform(-0.05, 0.05)
         capacity_liters = np.random.choice([100, 200, 500])
         criticality = np.random.choice(["High", "Medium", "Low"], p=[0.2, 0.5, 0.3])
-
         current_fill = np.random.uniform(5, 20)
 
         for timestamp in date_range:
-            # Waste generation rate varies by hour (peak generation during daytime)
             hour = timestamp.hour
             hourly_rate = (
                 np.random.uniform(3, 8)
                 if 8 <= hour <= 20
                 else np.random.uniform(0.5, 2)
             )
-
-            # Accumulate fill level
             current_fill += hourly_rate
 
-            # Simulated empty events (when bin gets collected/cleared)
             if current_fill >= 90 or (
                 current_fill > 70 and np.random.rand() < 0.15
             ):
@@ -55,43 +48,47 @@ def generate_synthetic_bin_data(num_bins=20, days=30, seed=42):
 
 
 def preprocess_data(df):
-    """Cleans raw IoT sensor data and performs feature engineering."""
+    """Clean sensor data and build features using only information available before prediction time."""
+    required = {
+        "timestamp",
+        "bin_id",
+        "latitude",
+        "longitude",
+        "capacity_liters",
+        "criticality",
+        "fill_level_pct",
+        "temperature_c",
+    }
+    missing = required.difference(df.columns)
+    if missing:
+        raise ValueError(f"Missing required columns: {sorted(missing)}")
+
     df = df.copy()
+    df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+    if df["timestamp"].isna().any():
+        raise ValueError("timestamp contains invalid values")
 
-    # Ensure correct datetime format
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
     df = df.sort_values(by=["bin_id", "timestamp"]).reset_index(drop=True)
+    df["fill_level_pct"] = pd.to_numeric(df["fill_level_pct"], errors="coerce").clip(0, 100)
+    if df["fill_level_pct"].isna().any():
+        raise ValueError("fill_level_pct contains invalid values")
 
-    # 1. Handle Missing Values / Outliers
-    df["fill_level_pct"] = df["fill_level_pct"].clip(0, 100)
-
-    # 2. Time-Series Feature Engineering
     df["hour"] = df["timestamp"].dt.hour
     df["day_of_week"] = df["timestamp"].dt.dayofweek
     df["is_weekend"] = df["day_of_week"].isin([5, 6]).astype(int)
 
-    # 3. Lag & Rolling Features per Bin
-    df["fill_lag_1h"] = df.groupby("bin_id")["fill_level_pct"].shift(1)
-    df["fill_lag_3h"] = df.groupby("bin_id")["fill_level_pct"].shift(3)
-    df["rolling_mean_6h"] = df.groupby("bin_id")["fill_level_pct"].transform(
-        lambda x: x.rolling(6, min_periods=1).mean()
+    grouped_fill = df.groupby("bin_id")["fill_level_pct"]
+    df["fill_lag_1h"] = grouped_fill.shift(1)
+    df["fill_lag_3h"] = grouped_fill.shift(3)
+    # Shift the rolling window so the current target is never included.
+    df["rolling_mean_6h"] = grouped_fill.transform(
+        lambda x: x.shift(1).rolling(6, min_periods=1).mean()
     )
 
-    # Fill NaNs created by lagging
-    df = df.bfill().ffill()
+    # The first observation for each bin has no historical features. Fill only
+    # from that bin's later observations, never across bin boundaries.
+    feature_columns = ["fill_lag_1h", "fill_lag_3h", "rolling_mean_6h"]
+    for column in feature_columns:
+        df[column] = df.groupby("bin_id")[column].transform(lambda x: x.bfill())
 
     return df
-
-
-if __name__ == "__main__":
-    print("Generating raw waste bin dataset...")
-    raw_df = generate_synthetic_bin_data()
-    print(f"Generated {len(raw_df)} raw records.")
-
-    print("Preprocessing data and engineering features...")
-    clean_df = preprocess_data(raw_df)
-
-    # Save to CSV for Person 2 (ML Model)
-    output_filename = "cleaned_waste_data.csv"
-    clean_df.to_csv(output_filename, index=False)
-    print(f"✅ Successfully saved preprocessed data to '{output_filename}'!")
