@@ -1,3 +1,27 @@
+# Smart Waste Collection & Route Optimisation
+
+<p align="center"><strong>Prediction → priority → routing</strong><br/>An end-to-end decision pipeline connecting machine-learning forecasts to vehicle-routing decisions.</p>
+
+> **Status:** engineering prototype using synthetic IoT-style data. This demonstrates the decision pipeline; it is not evidence of a live municipal deployment.
+
+## Engineering snapshot
+
+**Problem:** collection decisions need to connect predicted bin state with operational urgency and vehicle constraints.
+
+**Pipeline:** IoT-style time series → feature engineering → Random Forest prediction → continuous priority scoring → Google OR-Tools routing → Streamlit/Folium decision surface.
+
+**Technical proof:** time-series features · Random Forest regression · 0–100 priority scoring · CVRP optimisation · geospatial dashboard.
+
+## Why the pipeline matters
+
+The project deliberately connects stages that are often presented as separate demos: model output becomes a prioritisation signal, prioritisation becomes an optimisation input, and the resulting route is exposed for inspection.
+
+## Boundaries
+
+The data is synthetic and the routing environment is simulated. Model accuracy, route quality and operational savings should therefore be evaluated as engineering experiments rather than real-world impact.
+
+---
+
 # 🗑️ Smart Waste Collection & Route Optimization System<img width="1897" height="866" alt="Screenshot 2026-07-22 040317" src="https://github.com/user-attachments/assets/44c32438-619c-4c95-aef4-2af907966abf" />
 
 
